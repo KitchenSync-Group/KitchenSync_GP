@@ -1,98 +1,13 @@
-{% extends "base.html" %}
+{% extends "layout.html" %}
+{% block title %}Flask MVC App{% endblock %}
+{% block page %}Flask MVC App{% endblock %}
 
-{% block title %}KitchenSync - Home{% endblock %}
+{{ super() }}
 
 {% block content %}
-<div class="row justify-content-center my-5">
-    <div class="col-md-8 text-center">
-        <h1 class="display-4 mb-4">Welcome to KitchenSync</h1>
-        <p class="lead mb-4">Your personal ingredient tracking and recipe finding assistant.</p>
-        
-        {% if current_user.is_authenticated %}
-            <div class="row g-4 py-4">
-                <div class="col-md-6">
-                    <div class="card h-100 shadow-sm">
-                        <div class="card-body text-center">
-                            <i class="fas fa-carrot fa-3x mb-3 text-primary"></i>
-                            <h3 class="card-title">Manage Your Pantry</h3>
-                            <p class="card-text">Keep track of what ingredients you have at home.</p>
-                            <a href="{{ url_for('pantry.index') }}" class="btn btn-primary">Go to My Pantry</a>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-6">
-                    <div class="card h-100 shadow-sm">
-                        <div class="card-body text-center">
-                            <i class="fas fa-book fa-3x mb-3 text-success"></i>
-                            <h3 class="card-title">Find Recipes</h3>
-                            <p class="card-text">Discover recipes based on ingredients you already have.</p>
-                            <a href="{{ url_for('recipe.index') }}" class="btn btn-success">Browse Recipes</a>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="row g-4 py-2">
-                <div class="col-md-6">
-                    <div class="card h-100 shadow-sm">
-                        <div class="card-body text-center">
-                            <i class="fas fa-shopping-basket fa-3x mb-3 text-warning"></i>
-                            <h3 class="card-title">Shopping List</h3>
-                            <p class="card-text">Create a shopping list for ingredients you need.</p>
-                            <a href="{{ url_for('shopping_list.index') }}" class="btn btn-warning">Go to Shopping List</a>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-6">
-                    <div class="card h-100 shadow-sm">
-                        <div class="card-body text-center">
-                            <i class="fas fa-calendar-alt fa-3x mb-3 text-info"></i>
-                            <h3 class="card-title">Meal Prep</h3>
-                            <p class="card-text">Plan your meals for the week in advance.</p>
-                            <a href="{{ url_for('meal_plan.index') }}" class="btn btn-info">Plan Your Meals</a>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        {% else %}
-            <div class="my-5">
-                <p class="mb-4">Get started by logging in or creating an account:</p>
-                <a href="{{ url_for('auth.login') }}" class="btn btn-primary btn-lg me-3">Login</a>
-                <a href="{{ url_for('auth.register') }}" class="btn btn-outline-primary btn-lg">Sign Up</a>
-            </div>
-        {% endif %}
-    </div>
-</div>
-
-<div class="row mt-5">
-    <div class="col-12">
-        <div class="card bg-light mb-3">
-            <div class="card-body">
-                <h2 class="card-title text-center mb-4">Why Use KitchenSync?</h2>
-                <div class="row g-4">
-                    <div class="col-md-4">
-                        <div class="text-center">
-                            <i class="fas fa-leaf fa-3x mb-3 text-success"></i>
-                            <h3>Reduce Food Waste</h3>
-                            <p>Keep track of what you have and use ingredients before they expire.</p>
-                        </div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="text-center">
-                            <i class="fas fa-clock fa-3x mb-3 text-primary"></i>
-                            <h3>Save Time</h3>
-                            <p>Quickly find recipes that match what you already have in your pantry.</p>
-                        </div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="text-center">
-                            <i class="fas fa-lightbulb fa-3x mb-3 text-warning"></i>
-                            <h3>Get Inspired</h3>
-                            <p>Discover new recipe ideas and culinary creations.</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
+    <h1>Flask MVC</h1>
+    {% if is_authenticated %}
+        <p> Welcome {{current_user.username}} </p>
+    {% endif %}
+    <p>This is a boileplate flask application which follows the MVC pattern for structuring the project.</p>
 {% endblock %}
