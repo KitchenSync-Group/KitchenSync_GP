@@ -1,0 +1,262 @@
+{% extends "base.html" %}
+
+{% block title %}KitchenSync - {{ recipe.title if is_csv_recipe else recipe['title'] }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .ingredient-check {
+        cursor: pointer;
+    }
+    .ingredient-missing {
+        color: #dc3545;
+    }
+    .ingredient-available {
+        color: #28a745;
+    }
+    .recipe-header {
+        position: relative;
+        height: 300px;
+        overflow: hidden;
+        border-radius: 10px;
+        margin-bottom: 30px;
+    }
+    .recipe-image {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+    .recipe-overlay {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        background: linear-gradient(to top, rgba(0,0,0,0.8), transparent);
+        padding: 30px 20px 20px;
+        color: white;
+    }
+    .recipe-overlay h1 {
+        margin-bottom: 5px;
+        font-size: 2.5rem;
+    }
+    .recipe-stats {
+        background-color: #f8f9fa;
+        border-radius: 10px;
+        padding: 20px;
+        margin-bottom: 20px;
+    }
+    .step {
+        padding: 15px 0;
+        border-bottom: 1px solid #eee;
+    }
+    .step:last-child {
+        border-bottom: none;
+    }
+    .step-number {
+        display: inline-block;
+        width: 30px;
+        height: 30px;
+        line-height: 30px;
+        text-align: center;
+        background-color: #6c757d;
+        color: white;
+        border-radius: 50%;
+        margin-right: 10px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="mb-4">
+        <a href="{{ url_for('recipe.browse') }}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left me-2"></i>Back to Recipes
+        </a>
+    </div>
+    
+    <!-- Recipe Header -->
+    <div class="recipe-header">
+        {% if is_csv_recipe %}
+            <img src="{{ recipe.image_url }}" alt="{{ recipe.title }}" class="recipe-image">
+            <div class="recipe-overlay">
+                <h1>{{ recipe.title }}</h1>
+                <div class="d-flex gap-3">
+                    <span><i class="far fa-clock me-1"></i> {{ recipe.cooking_time }} minutes</span>
+                    <span><i class="fas fa-utensils me-1"></i> {{ recipe.serving_size }} servings</span>
+                    <span><i class="fas fa-tag me-1"></i> {{ recipe.meal_type }}</span>
+                </div>
+            </div>
+        {% else %}
+            <img src="{{ recipe.image_url if is_api_recipe else url_for('static', filename='images/default-recipe.jpg') }}" alt="{{ recipe.title }}" class="recipe-image">
+            <div class="recipe-overlay">
+                <h1>{{ recipe.title }}</h1>
+                <div class="d-flex gap-3">
+                    <span><i class="far fa-clock me-1"></i> {{ recipe.cooking_time }} minutes</span>
+                    <span><i class="fas fa-utensils me-1"></i> {{ recipe.serving_size }} servings</span>
+                    <span><i class="fas fa-tag me-1"></i> {{ recipe.meal_type }}</span>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+    
+    <div class="row">
+        <!-- Left Column: Ingredients -->
+        <div class="col-md-4">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h3 class="mb-0">Ingredients</h3>
+                </div>
+                <div class="card-body">
+                    <ul class="list-group list-group-flush">
+                        {% if is_csv_recipe %}
+                            {% for ingredient in recipe.ingredients %}
+                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                    <span class="{% if ingredient in missing_ingredients %}ingredient-missing{% else %}ingredient-available{% endif %}">
+                                        {{ ingredient.quantity }} {{ ingredient.unit }} {{ ingredient.name }}
+                                    </span>
+                                    <span class="badge {% if ingredient in missing_ingredients %}bg-danger{% else %}bg-success{% endif %} rounded-pill">
+                                        {% if ingredient in missing_ingredients %}
+                                            <i class="fas fa-times"></i>
+                                        {% else %}
+                                            <i class="fas fa-check"></i>
+                                        {% endif %}
+                                    </span>
+                                </li>
+                            {% endfor %}
+                        {% else %}
+                            {% for ingredient in recipe.ingredients %}
+                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                    <span class="{% if ingredient in missing_ingredients %}ingredient-missing{% else %}ingredient-available{% endif %}">
+                                        {% if ingredient.quantity is defined %}
+                                            {{ ingredient.quantity }} {{ ingredient.unit }} {{ ingredient.name }}
+                                        {% else %}
+                                            {{ ingredient.amount }} {{ ingredient.unit }} {{ ingredient.name }}
+                                        {% endif %}
+                                    </span>
+                                    <span class="badge {% if ingredient in missing_ingredients %}bg-danger{% else %}bg-success{% endif %} rounded-pill">
+                                        {% if ingredient in missing_ingredients %}
+                                            <i class="fas fa-times"></i>
+                                        {% else %}
+                                            <i class="fas fa-check"></i>
+                                        {% endif %}
+                                    </span>
+                                </li>
+                            {% endfor %}
+                        {% endif %}
+                    </ul>
+                </div>
+                <div class="card-footer">
+                    <form method="POST" action="{{ url_for('recipe.add_to_shopping_list', recipe_id=recipe.id if not is_csv_recipe else recipe['id']) }}">
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="fas fa-shopping-basket me-2"></i>Add Missing to Shopping List
+                        </button>
+                    </form>
+                </div>
+            </div>
+            
+            {% if recipe.dietary_preferences and recipe.dietary_preferences|length > 0 %}
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h3 class="mb-0">Dietary Information</h3>
+                </div>
+                <div class="card-body">
+                    <div class="mb-2">
+                        {% for diet in recipe.dietary_preferences %}
+                            <span class="badge bg-success me-1">{{ diet }}</span>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+            
+            <!-- Meal Planning -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h3 class="mb-0">Add to Meal Plan</h3>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('meal_plan.quick_add') }}">
+                        <input type="hidden" name="recipe_id" value="{{ recipe.id if not is_csv_recipe else recipe['id'] }}">
+                        <input type="hidden" name="recipe_title" value="{{ recipe.title if not is_csv_recipe else recipe['title'] }}">
+                        
+                        <div class="mb-3">
+                            <label for="meal_date" class="form-label">Date</label>
+                            <input type="date" class="form-control" id="meal_date" name="date" value="{{ today_date }}" required>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="meal_type" class="form-label">Meal Type</label>
+                            <select class="form-select" id="meal_type" name="meal_type" required>
+                                <option value="Breakfast">Breakfast</option>
+                                <option value="Lunch">Lunch</option>
+                                <option value="Dinner" selected>Dinner</option>
+                                <option value="Snack">Snack</option>
+                                <option value="Dessert">Dessert</option>
+                            </select>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="notes" class="form-label">Notes</label>
+                            <textarea class="form-control" id="notes" name="notes" rows="2"></textarea>
+                        </div>
+                        
+                        <button type="submit" class="btn btn-success w-100">
+                            <i class="fas fa-calendar-plus me-2"></i>Add to Meal Plan
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Right Column: Instructions -->
+        <div class="col-md-8">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h3 class="mb-0">Instructions</h3>
+                </div>
+                <div class="card-body">
+                    {% if is_csv_recipe %}
+                        <div class="steps">
+                            {% for i in range(recipe.instructions|length) %}
+                                <div class="step">
+                                    <span class="step-number">{{ i+1 }}</span>
+                                    {{ recipe.instructions[i] }}
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="steps">
+                            {% for i in range(recipe.instructions|length) %}
+                                <div class="step">
+                                    <span class="step-number">{{ i+1 }}</span>
+                                    {{ recipe.instructions[i] }}
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Nutrition Facts (if available) -->
+            {% if recipe.nutrition_facts is defined and recipe.nutrition_facts %}
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h3 class="mb-0">Nutrition Facts</h3>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        {% for key, value in recipe.nutrition_facts.items() %}
+                        <div class="col-6 col-md-4 mb-3">
+                            <div class="d-flex justify-content-between">
+                                <span class="text-muted">{{ key }}</span>
+                                <span class="fw-bold">{{ value }}</span>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
