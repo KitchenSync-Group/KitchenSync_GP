@@ -1,0 +1,197 @@
+{% extends "base.html" %}
+
+{% block title %}KitchenSync - Meal Planning{% endblock %}
+
+{% block extra_css %}
+<style>
+    .meal-cell {
+        min-height: 100px;
+        transition: all 0.2s ease;
+    }
+    .meal-cell:hover {
+        background-color: rgba(0,0,0,0.03);
+    }
+    .meal-card {
+        height: 100%;
+    }
+    .meal-card .card-body {
+        padding: 0.75rem;
+    }
+    .date-header {
+        position: sticky;
+        top: 0;
+        background-color: white;
+        z-index: 10;
+        padding: 10px 0;
+        border-bottom: 2px solid #f0f0f0;
+    }
+    .today-highlight {
+        background-color: rgba(255, 255, 173, 0.2);
+    }
+    .meal-placeholder {
+        border: 2px dashed #dee2e6;
+        border-radius: 0.25rem;
+        height: 100%;
+        min-height: 100px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #6c757d;
+    }
+    .table-responsive {
+        overflow-x: auto;
+    }
+    .day-column {
+        min-width: 180px;
+    }
+    .meal-actions {
+        position: absolute;
+        top: 5px;
+        right: 5px;
+        display: none;
+    }
+    .meal-cell:hover .meal-actions {
+        display: block;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1 class="mb-4"><i class="fas fa-calendar-alt me-2"></i>Meal Planning</h1>
+    
+    <!-- Week Navigation -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <a href="{{ url_for('meal_plan.index', date=prev_week) }}" class="btn btn-outline-secondary">
+                <i class="fas fa-chevron-left me-1"></i> Previous Week
+            </a>
+        </div>
+        
+        <div class="text-center">
+            <h3 class="mb-0">{{ start_date.strftime('%b %d') }} - {{ end_date.strftime('%b %d, %Y') }}</h3>
+        </div>
+        
+        <div>
+            <a href="{{ url_for('meal_plan.index', date=today) }}" class="btn btn-outline-primary me-2">
+                Today
+            </a>
+            <a href="{{ url_for('meal_plan.index', date=next_week) }}" class="btn btn-outline-secondary">
+                Next Week <i class="fas fa-chevron-right ms-1"></i>
+            </a>
+        </div>
+    </div>
+    
+    <!-- Week Calendar View -->
+    <div class="table-responsive mb-4">
+        <table class="table table-bordered">
+            <thead class="date-header">
+                <tr>
+                    <th style="width: 100px">Meal</th>
+                    {% for day_offset in range(7) %}
+                        {% set current_date = start_date + datetime.timedelta(days=day_offset) %}
+                        {% set is_today = current_date.isoformat() == today %}
+                        <th class="day-column {% if is_today %}today-highlight{% endif %}">
+                            <div class="d-flex flex-column">
+                                <span class="fw-bold">{{ current_date.strftime('%a') }}</span>
+                                <span>{{ current_date.strftime('%b %d') }}</span>
+                            </div>
+                        </th>
+                    {% endfor %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for meal_type in meal_types %}
+                <tr>
+                    <th class="align-middle">{{ meal_type }}</th>
+                    
+                    {% for day_offset in range(7) %}
+                        {% set current_date = start_date + datetime.timedelta(days=day_offset) %}
+                        {% set date_key = current_date.isoformat() %}
+                        {% set is_today = current_date.isoformat() == today %}
+                        
+                        <td class="meal-cell p-2 {% if is_today %}today-highlight{% endif %}">
+                            {% if organized_plans[date_key][meal_type] %}
+                                {% set plan = organized_plans[date_key][meal_type] %}
+                                <div class="card meal-card h-100">
+                                    <div class="card-body">
+                                        <div class="meal-actions">
+                                            <div class="btn-group btn-group-sm">
+                                                <a href="{{ url_for('meal_plan.edit', plan_id=plan.id) }}" class="btn btn-sm btn-outline-secondary">
+                                                    <i class="fas fa-edit"></i>
+                                                </a>
+                                                <form method="POST" action="{{ url_for('meal_plan.delete', plan_id=plan.id) }}" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this meal plan?');">
+                                                    <button type="submit" class="btn btn-sm btn-outline-danger">
+                                                        <i class="fas fa-trash"></i>
+                                                    </button>
+                                                </form>
+                                            </div>
+                                        </div>
+                                        
+                                        <h6 class="card-title mb-1">{{ plan.recipe_title }}</h6>
+                                        
+                                        {% if plan.recipe_id %}
+                                            <a href="{{ url_for('recipe.detail', recipe_id=plan.recipe_id) }}" class="btn btn-sm btn-outline-primary mt-2">
+                                                <i class="fas fa-eye me-1"></i>View Recipe
+                                            </a>
+                                        {% endif %}
+                                        
+                                        {% if plan.notes %}
+                                            <div class="mt-2 small text-muted">
+                                                <i class="fas fa-sticky-note me-1"></i> {{ plan.notes }}
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            {% else %}
+                                <a href="{{ url_for('meal_plan.add') }}?date={{ date_key }}&meal_type={{ meal_type }}" class="meal-placeholder text-decoration-none">
+                                    <div class="text-center">
+                                        <i class="fas fa-plus mb-2"></i><br>
+                                        Add {{ meal_type }}
+                                    </div>
+                                </a>
+                            {% endif %}
+                        </td>
+                    {% endfor %}
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    
+    <div class="d-flex justify-content-center mb-4">
+        <a href="{{ url_for('meal_plan.add') }}" class="btn btn-primary">
+            <i class="fas fa-plus me-1"></i> Add Meal Plan
+        </a>
+    </div>
+    
+    <!-- Tips Section -->
+    <div class="card mt-4">
+        <div class="card-header">
+            <h3 class="mb-0">Meal Planning Tips</h3>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <h5><i class="fas fa-lightbulb me-2 text-warning"></i>Why Plan Your Meals?</h5>
+                    <ul class="list-unstyled ps-4">
+                        <li><i class="fas fa-check-circle me-2 text-success"></i>Reduces food waste</li>
+                        <li><i class="fas fa-check-circle me-2 text-success"></i>Saves time and money</li>
+                        <li><i class="fas fa-check-circle me-2 text-success"></i>Helps maintain a balanced diet</li>
+                        <li><i class="fas fa-check-circle me-2 text-success"></i>Reduces daily decision fatigue</li>
+                    </ul>
+                </div>
+                <div class="col-md-6">
+                    <h5><i class="fas fa-star me-2 text-warning"></i>Planning Strategies</h5>
+                    <ul class="list-unstyled ps-4">
+                        <li><i class="fas fa-arrow-circle-right me-2 text-primary"></i>Plan around what's in your pantry</li>
+                        <li><i class="fas fa-arrow-circle-right me-2 text-primary"></i>Cook once, eat twice (leftovers)</li>
+                        <li><i class="fas fa-arrow-circle-right me-2 text-primary"></i>Theme nights (e.g., Meatless Monday)</li>
+                        <li><i class="fas fa-arrow-circle-right me-2 text-primary"></i>Prep ingredients ahead for quick cooking</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

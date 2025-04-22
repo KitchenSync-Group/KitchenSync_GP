@@ -1,44 +1,70 @@
-from flask_jwt_extended import create_access_token, jwt_required, JWTManager, get_jwt_identity, verify_jwt_in_request
 
-from App.models import User
+from app.models.user import User
+from app.database import db_session
+from werkzeug.security import check_password_hash
 
-def login(username, password):
-  user = User.query.filter_by(username=username).first()
-  if user and user.check_password(password):
-    return create_access_token(identity=username)
-  return None
+def register_user(username, email, password, dietary_preferences=None):
+    """Register a new user"""
+    # Check if username or email already exists
+    existing_user = User.query.filter(
+        (User.username == username) | (User.email == email)
+    ).first()
+    
+    if existing_user:
+        return False, "Username or email already exists"
+    
+    # Create new user
+    user = User(username=username, email=email)
+    user.set_password(password)
+    
+    # Set dietary preferences if provided
+    if dietary_preferences:
+        if 'vegan' in dietary_preferences:
+            user.is_vegan = True
+        if 'vegetarian' in dietary_preferences:
+            user.is_vegetarian = True
+        if 'gluten_free' in dietary_preferences:
+            user.is_gluten_free = True
+        if 'dairy_free' in dietary_preferences:
+            user.is_dairy_free = True
+    
+    # Save user to database
+    db_session.add(user)
+    db_session.commit()
+    
+    return True, "User registered successfully"
 
+def authenticate_user(username, password):
+    """Authenticate a user by username and password"""
+    user = User.query.filter_by(username=username).first()
+    
+    if not user or not check_password_hash(user.password_hash, password):
+        return None
+    
+    return user
 
-def setup_jwt(app):
-  jwt = JWTManager(app)
-
-  # configure's flask jwt to resolve get_current_identity() to the corresponding user's ID
-  @jwt.user_identity_loader
-  def user_identity_lookup(identity):
-    user = User.query.filter_by(username=identity).one_or_none()
-    if user:
-        return user.id
-    return None
-
-  @jwt.user_lookup_loader
-  def user_lookup_callback(_jwt_header, jwt_data):
-    identity = jwt_data["sub"]
-    return User.query.get(identity)
-
-  return jwt
-
-
-# Context processor to make 'is_authenticated' available to all templates
-def add_auth_context(app):
-  @app.context_processor
-  def inject_user():
-      try:
-          verify_jwt_in_request()
-          user_id = get_jwt_identity()
-          current_user = User.query.get(user_id)
-          is_authenticated = True
-      except Exception as e:
-          print(e)
-          is_authenticated = False
-          current_user = None
-      return dict(is_authenticated=is_authenticated, current_user=current_user)
+def update_dietary_preferences(user_id, preferences):
+    """Update user's dietary preferences"""
+    user = User.query.get(user_id)
+    if not user:
+        return False, "User not found"
+    
+    # Reset all preferences
+    user.is_vegan = False
+    user.is_vegetarian = False
+    user.is_gluten_free = False
+    user.is_dairy_free = False
+    
+    # Set selected preferences
+    if 'vegan' in preferences:
+        user.is_vegan = True
+    if 'vegetarian' in preferences:
+        user.is_vegetarian = True
+    if 'gluten_free' in preferences:
+        user.is_gluten_free = True
+    if 'dairy_free' in preferences:
+        user.is_dairy_free = True
+    
+    db_session.commit()
+    
+    return True, "Dietary preferences updated successfully"
