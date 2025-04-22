@@ -1,0 +1,207 @@
+{% extends "base.html" %}
+
+{% block title %}KitchenSync - Browse Recipes{% endblock %}
+
+{% block extra_css %}
+<style>
+    .recipe-card {
+        transition: transform 0.2s ease-in-out;
+        height: 100%;
+    }
+    .recipe-card:hover {
+        transform: translateY(-5px);
+    }
+    .recipe-img {
+        height: 180px;
+        object-fit: cover;
+    }
+    .filter-section {
+        position: sticky;
+        top: 1rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-3">
+        <div class="filter-section">
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Recipe Filters</h5>
+                </div>
+                <div class="card-body">
+                    <form id="recipe-filter-form" method="GET" action="{{ url_for('recipe.index') }}">
+                        <div class="mb-3">
+                            <label class="form-label">Missing Ingredients</label>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="missing" id="include-missing" value="include" {% if current_missing != 'exclude' %}checked{% endif %}>
+                                <label class="form-check-label" for="include-missing">
+                                    Show all recipes
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="missing" id="exclude-missing" value="exclude" {% if current_missing == 'exclude' %}checked{% endif %}>
+                                <label class="form-check-label" for="exclude-missing">
+                                    Only show recipes I can make now
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="diet-filter" class="form-label">Dietary Preference</label>
+                            <select class="form-select" id="diet-filter" name="diet">
+                                <option value="">All Diets</option>
+                                {% for diet in dietary_preferences %}
+                                <option value="{{ diet }}" {% if current_diet == diet %}selected{% endif %}>{{ diet }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="meal-filter" class="form-label">Meal Type</label>
+                            <select class="form-select" id="meal-filter" name="meal">
+                                <option value="">All Meal Types</option>
+                                {% for meal in meal_categories %}
+                                <option value="{{ meal }}" {% if current_meal == meal %}selected{% endif %}>{{ meal }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <button type="submit" class="btn btn-primary w-100">Apply Filters</button>
+                    </form>
+                </div>
+            </div>
+            
+            <div class="d-grid gap-2">
+                <a href="{{ url_for('recipe.add') }}" class="btn btn-success">
+                    <i class="fas fa-plus-circle me-1"></i> Add Your Own Recipe
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-9">
+        <h1 class="mb-4"><i class="fas fa-book me-2"></i>Browse Recipes</h1>
+        
+        <!-- User Recipes Section -->
+        {% if user_recipes|length > 0 %}
+        <div class="mb-4">
+            <h2 class="mb-3">My Recipes</h2>
+            <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+                {% for recipe in user_recipes %}
+                <div class="col">
+                    <div class="card recipe-card shadow-sm h-100">
+                        <div class="card-header bg-light text-center">
+                            <svg class="bd-placeholder-img card-img-top recipe-img" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Recipe Image" preserveAspectRatio="xMidYMid slice" focusable="false">
+                                <title>Recipe</title>
+                                <rect width="100%" height="100%" fill="#6c757d"/>
+                                <text x="50%" y="50%" fill="#dee2e6" dominant-baseline="middle" text-anchor="middle">
+                                    <tspan x="50%" dy="-10">{{ recipe.title|truncate(20) }}</tspan>
+                                    <tspan x="50%" dy="30">User Recipe</tspan>
+                                </text>
+                            </svg>
+                        </div>
+                        <div class="card-body">
+                            <h5 class="card-title">{{ recipe.title }}</h5>
+                            <p class="card-text">
+                                <small class="text-muted">
+                                    <i class="fas fa-clock me-1"></i> {{ recipe.cooking_time }} mins
+                                    <span class="ms-2"><i class="fas fa-user-friends me-1"></i> {{ recipe.serving_size }} servings</span>
+                                </small>
+                            </p>
+                            <p class="card-text">
+                                <span class="badge bg-secondary me-1">{{ recipe.meal_type }}</span>
+                                {% for diet in recipe.dietary_specs %}
+                                <span class="badge bg-info text-dark me-1">{{ diet }}</span>
+                                {% endfor %}
+                            </p>
+                            <p class="card-text">
+                                <small class="text-muted">{{ recipe.ingredients|length }} ingredients</small>
+                            </p>
+                        </div>
+                        <div class="card-footer bg-white border-top-0">
+                            <a href="{{ url_for('recipe.detail', recipe_id=recipe.recipe_id) }}" class="btn btn-outline-primary w-100">View Recipe</a>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        <hr class="my-4">
+        {% endif %}
+        
+        <!-- API Recipes Section -->
+        <div>
+            <h2 class="mb-3">Recipes Based on Your Pantry</h2>
+            
+            {% if api_recipes|length > 0 %}
+            <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+                {% for recipe in api_recipes %}
+                <div class="col">
+                    <div class="card recipe-card shadow-sm h-100">
+                        {% if recipe.image %}
+                        <img src="{{ recipe.image }}" class="card-img-top recipe-img" alt="{{ recipe.title }}">
+                        {% else %}
+                        <svg class="bd-placeholder-img card-img-top recipe-img" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Recipe Image" preserveAspectRatio="xMidYMid slice" focusable="false">
+                            <title>Recipe</title>
+                            <rect width="100%" height="100%" fill="#6c757d"/>
+                            <text x="50%" y="50%" fill="#dee2e6" dominant-baseline="middle" text-anchor="middle">No Image</text>
+                        </svg>
+                        {% endif %}
+                        <div class="card-body">
+                            <h5 class="card-title">{{ recipe.title }}</h5>
+                            <div class="d-flex justify-content-between">
+                                <span class="text-success">
+                                    <i class="fas fa-check-circle me-1"></i> {{ recipe.usedIngredientCount }} ingredients in pantry
+                                </span>
+                                {% if recipe.missedIngredientCount > 0 %}
+                                <span class="text-danger">
+                                    <i class="fas fa-exclamation-circle me-1"></i> {{ recipe.missedIngredientCount }} missing
+                                </span>
+                                {% endif %}
+                            </div>
+                            
+                            {% if recipe.dishTypes and recipe.dishTypes|length > 0 %}
+                            <p class="card-text mt-2">
+                                {% for type in recipe.dishTypes[:2] %}
+                                <span class="badge bg-secondary me-1">{{ type }}</span>
+                                {% endfor %}
+                            </p>
+                            {% endif %}
+                            
+                            {% if recipe.diets and recipe.diets|length > 0 %}
+                            <p class="card-text">
+                                {% for diet in recipe.diets[:3] %}
+                                <span class="badge bg-info text-dark me-1">{{ diet }}</span>
+                                {% endfor %}
+                            </p>
+                            {% endif %}
+                        </div>
+                        <div class="card-footer bg-white border-top-0">
+                            <a href="{{ url_for('recipe.detail', recipe_id=recipe.id) }}" class="btn btn-outline-primary w-100">View Recipe</a>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="text-center py-5">
+                <div class="empty-state">
+                    <i class="fas fa-search fa-3x mb-3 text-muted"></i>
+                    <h5>No matching recipes found</h5>
+                    <p>Try adjusting your filters or add more ingredients to your pantry.</p>
+                    <a href="{{ url_for('pantry.index') }}" class="btn btn-primary mt-2">
+                        <i class="fas fa-carrot me-1"></i> Update My Pantry
+                    </a>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/recipe.js') }}"></script>
+{% endblock %}

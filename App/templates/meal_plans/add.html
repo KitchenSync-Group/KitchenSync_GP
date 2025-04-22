@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+
+{% block title %}KitchenSync - Add Meal Plan{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <h1 class="mb-4"><i class="fas fa-calendar-plus me-2"></i>Add Meal Plan</h1>
+            
+            <div class="card">
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('meal_plan.add') }}">
+                        {{ form.hidden_tag() }}
+                        
+                        <div class="mb-3">
+                            <label for="date" class="form-label">Date</label>
+                            {{ form.date(class="form-control", id="date") }}
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="meal_type" class="form-label">Meal Type</label>
+                            {{ form.meal_type(class="form-select", id="meal_type") }}
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="recipe_id" class="form-label">Recipe ID (optional)</label>
+                            {{ form.recipe_id(class="form-control", id="recipe_id", placeholder="Leave empty if not using a saved recipe") }}
+                            <div class="form-text">If you're adding a meal from a recipe, enter its ID here.</div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="recipe_title" class="form-label">Recipe Name</label>
+                            {{ form.recipe_title(class="form-control", id="recipe_title", placeholder="Enter recipe name or dish description") }}
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="notes" class="form-label">Notes (optional)</label>
+                            {{ form.notes(class="form-control", id="notes", rows="3", placeholder="Special preparation instructions, substitutions, etc.") }}
+                        </div>
+                        
+                        <div class="d-grid gap-2">
+                            {{ form.submit(class="btn btn-primary") }}
+                            <a href="{{ url_for('meal_plan.index') }}" class="btn btn-outline-secondary">Cancel</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
